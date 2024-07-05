@@ -6,7 +6,7 @@ import com.sparta.ottoon.comment.entity.Comment;
 import com.sparta.ottoon.comment.repository.CommentRepository;
 import com.sparta.ottoon.common.exception.CustomException;
 import com.sparta.ottoon.common.exception.ErrorCode;
-import com.sparta.ottoon.like.entity.Like;
+import com.sparta.ottoon.like.entity.Likes;
 import com.sparta.ottoon.like.entity.LikeTypeEnum;
 import com.sparta.ottoon.like.repository.LikeRepository;
 import com.sparta.ottoon.post.entity.Post;
@@ -38,13 +38,13 @@ public class LikeService {
         if(post.getUser().getId() == user.getId()){
             throw new CustomException(ErrorCode.FAIL_LIKESELF);
         }
-        Optional<Like> existingLike = likeRepository.findByPostAndUser(post, user);
+        Optional<Likes> existingLike = likeRepository.findByPostAndUser(post, user);
         if (existingLike.isPresent()) {
             likeRepository.delete(existingLike.get());
             return "게시글 좋아요 삭제 완료";
         } else {
-            Like like = new Like(user, post, null, LikeTypeEnum.POST_TYPE);
-            likeRepository.save(like);
+            Likes likes = new Likes(user, post, LikeTypeEnum.POST_TYPE);
+            likeRepository.save(likes);
             return "게시글 좋아요 완료";
         }
     }
@@ -55,13 +55,13 @@ public class LikeService {
         if(comment.getUser().getId() == user.getId()){
             throw new CustomException(ErrorCode.FAIL_COMMENTSELF);
         }
-        Optional<Like> existingLike = likeRepository.findByCommentAndUser(comment, user);
+        Optional<Likes> existingLike = likeRepository.findByCommentAndUser(comment, user);
         if (existingLike.isPresent()) {
             likeRepository.delete(existingLike.get());
             return "댓글 좋아요 삭제 완료";
         } else {
-            Like like = new Like(user, null, comment, LikeTypeEnum.COMMENT_TYPE);
-            likeRepository.save(like);
+            Likes likes = new Likes(user, comment, LikeTypeEnum.COMMENT_TYPE);
+            likeRepository.save(likes);
             return "댓글 좋아요 완료";
         }
     }

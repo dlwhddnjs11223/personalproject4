@@ -27,7 +27,8 @@ public class LikeController {
 
     @Operation(summary = "createLikePost", description = "게시글 좋아요 생성 기능")
     @PostMapping("/post/{postId}/like")
-    public ResponseEntity<String> likeOrUnlikePost(@AuthenticationPrincipal UserDetails userDetails, @PathVariable Long postId) {
+    public ResponseEntity<String> likeOrUnlikePost(@AuthenticationPrincipal UserDetails userDetails,
+                                                   @PathVariable Long postId) {
         return ResponseEntity.status(HttpStatus.OK).body(likeService.postlikeOrUnlike(userDetails.getUsername(), postId));
     }
 

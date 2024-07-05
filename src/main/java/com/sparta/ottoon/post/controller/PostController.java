@@ -1,14 +1,20 @@
 package com.sparta.ottoon.post.controller;
 
+import com.querydsl.core.Tuple;
+import com.sparta.ottoon.auth.entity.User;
 import com.sparta.ottoon.post.dto.PostRequestDto;
 import com.sparta.ottoon.post.dto.PostResponseDto;
+import com.sparta.ottoon.post.entity.Post;
 import com.sparta.ottoon.post.service.PostService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Collections;
@@ -75,4 +81,22 @@ public class PostController {
         response.put("message", "게시글 삭제 완료");
         return ResponseEntity.ok().body(response);
     }
+
+    @Operation(summary = "findLikePost", description = "좋아요 한 게시글 목록 조회 기능입니다.")
+    @GetMapping("/postslike")
+    public Page<PostResponseDto> findLikePost(@AuthenticationPrincipal UserDetails userDetails,
+                                              @RequestParam("page") int page
+    ) {
+        return postService.findLikePost(userDetails, page);
+    }
+
+    @Operation(summary = "findPostsFollow", description = "팔로우 한 유저의 게시글 조회 기능입니다.")
+    @GetMapping("/posts/follow")
+    public Page<PostResponseDto> findPostsFollow (@AuthenticationPrincipal UserDetails userDetails,
+                                        @RequestParam("page") int page) {
+        return postService.findPostsFollow(userDetails, page);
+    }
+
+
+
 }

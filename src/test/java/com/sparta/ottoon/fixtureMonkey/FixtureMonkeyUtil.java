@@ -9,11 +9,14 @@ import com.navercorp.fixturemonkey.api.introspector.FieldReflectionArbitraryIntr
 import com.sparta.ottoon.auth.entity.User;
 import com.sparta.ottoon.auth.entity.UserStatus;
 import com.sparta.ottoon.comment.entity.Comment;
+import com.sparta.ottoon.like.entity.LikeTypeEnum;
+import com.sparta.ottoon.like.entity.Likes;
 import com.sparta.ottoon.post.entity.Post;
 import com.sparta.ottoon.post.entity.PostStatus;
 import net.jqwik.api.Arbitraries;
 import net.jqwik.api.arbitraries.StringArbitrary;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
@@ -40,6 +43,7 @@ public class FixtureMonkeyUtil {
                     .set("id", Arbitraries.longs().between(1L, 50L))
                     .sample();
         }
+
         public static List<User> toUsers(int count) {
             return FixtureMonkeyUtil.monkey()
                     .giveMeBuilder(User.class)
@@ -56,6 +60,7 @@ public class FixtureMonkeyUtil {
                     .set("email", "test1@test.com")
                     .set("status", UserStatus.ACTIVE)
                     .set("intro", null)
+                    .set("likesList", null)
                     .sampleList(count);
         }
 
@@ -65,14 +70,27 @@ public class FixtureMonkeyUtil {
                     .set("id", Arbitraries.longs().between(1L, 50L))
                     .sample();
         }
+
         public static List<Post> toPosts(int count) {
             return getPostArbitraryBuilder()
                     .sampleList(count);
         }
 
         public static List<Post> toPosts(int count, List<User> users) {
+
+
             return getPostArbitraryBuilder(Arbitraries.longs().between(1L, 50L).sample(), Arbitraries.of(users))
                     .sampleList(count);
+        }
+
+        public static List<Likes> toLikes(int count, User user) {
+            return FixtureMonkeyUtil.monkey()
+                    .giveMeBuilder(Likes.class)
+                    .set("id", Arbitraries.longs().between(1L, 10L))
+                    .set("user", user)
+                    .set("likeType", LikeTypeEnum.POST_TYPE)
+                    .sampleList(count);
+
         }
 
         public static Comment toComment() {
@@ -82,6 +100,7 @@ public class FixtureMonkeyUtil {
                     .sample();
         }
     }
+
     private static ArbitraryBuilder<Post> getPostArbitraryBuilder() {
         return getPostArbitraryBuilder(Arbitraries.longs().between(1L, 50L).sample(),
                 toUser());
@@ -90,17 +109,20 @@ public class FixtureMonkeyUtil {
     private static ArbitraryBuilder<Post> getPostArbitraryBuilder(Long id, Object user) {
         return FixtureMonkeyUtil.monkey()
                 .giveMeBuilder(Post.class)
-                .set("id", id)
+                .set("id", Arbitraries.longs())
                 .set("contents", getRandomStringArbitrary(5, 100))
                 .set("postStatus", PostStatus.GENERAL)
-                .set("user", user);
+                .set("user", user)
+                .set("likesList", null);
+
     }
+
     public static StringArbitrary getRandomStringArbitrary(int max) {
-        return  getRandomStringArbitrary(1, max);
+        return getRandomStringArbitrary(1, max);
     }
 
     public static StringArbitrary getRandomStringArbitrary(int min, int max) {
-        return  Arbitraries.strings()
+        return Arbitraries.strings()
                 .alpha()
                 .numeric()
                 .ofMinLength(min)

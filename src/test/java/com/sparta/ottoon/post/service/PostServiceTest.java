@@ -4,27 +4,37 @@ import com.sparta.ottoon.OttoonApplicationTests;
 import com.sparta.ottoon.auth.entity.User;
 import com.sparta.ottoon.auth.entity.UserStatus;
 import com.sparta.ottoon.auth.repository.UserRepository;
+import com.sparta.ottoon.auth.service.UserDetailsImpl;
 import com.sparta.ottoon.common.exception.CustomException;
 import com.sparta.ottoon.common.exception.ErrorCode;
 import com.sparta.ottoon.fixtureMonkey.FixtureMonkeyUtil;
+import com.sparta.ottoon.follow.entity.Follow;
+import com.sparta.ottoon.follow.repository.FollowRepository;
+import com.sparta.ottoon.follow.service.FollowService;
+import com.sparta.ottoon.like.entity.LikeTypeEnum;
+import com.sparta.ottoon.like.entity.Likes;
+import com.sparta.ottoon.like.repository.LikeRepository;
 import com.sparta.ottoon.post.dto.PostRequestDto;
 import com.sparta.ottoon.post.dto.PostResponseDto;
 import com.sparta.ottoon.post.entity.Post;
 import com.sparta.ottoon.post.repository.PostRepository;
 import org.junit.jupiter.api.*;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Comparator;
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.*;
 
+@ActiveProfiles("test")
 @DisplayName("게시글 서비스 테스트")
 @TestClassOrder(ClassOrderer.OrderAnnotation.class)
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
@@ -33,19 +43,33 @@ class PostServiceTest extends OttoonApplicationTests {
     User user;
 
     @Autowired
-    PostService PostService;
+    PostService postService;
 
     @Autowired
-    PostRepository PostRepository;
+    PostRepository postRepository;
 
     @Autowired
     UserRepository userRepository;
 
+    @Autowired
+    LikeRepository likeRepository;
+
+    @Autowired
+    FollowRepository followRepository;
+
+    Authentication authentication;
+
+
     @BeforeEach
     void setUp() {
-        posts = PostRepository.saveAll(getPostDataInit(5));
+        posts = postRepository.saveAll(getPostDataInit(5));
+        for (int i = 0; i < users.size(); i++) {
+            posts.get(i).updateUser(users.get(i));
+        }
         user = posts.get(0).getUser();
-        Authentication authentication = new UsernamePasswordAuthenticationToken(user.getUsername(), user.getPassword());
+        UserDetailsImpl userDetails = new UserDetailsImpl(user);
+
+        authentication = new UsernamePasswordAuthenticationToken(userDetails, user.getPassword());
         SecurityContext securityContext = SecurityContextHolder.getContext();
         securityContext.setAuthentication(authentication);
     }
@@ -62,10 +86,10 @@ class PostServiceTest extends OttoonApplicationTests {
                 .set("contents", content)
                 .sample();
         // when
-        PostResponseDto responseDto = PostService.save(requestDto);
+        PostResponseDto responseDto = postService.save(requestDto);
 
         // then
-        Post createPost = PostRepository.findById(responseDto.getPostId()).orElse(null);
+        Post createPost = postRepository.findById(responseDto.getPostId()).orElse(null);
 
         assert createPost != null;
         assertEquals(requestDto.getContents(), createPost.getContents());
@@ -81,7 +105,7 @@ class PostServiceTest extends OttoonApplicationTests {
         @Test
         void test1() {
             // when
-            List<PostResponseDto> responseDto = PostService.getAll(1);
+            List<PostResponseDto> responseDto = postService.getAll(1);
             List<PostResponseDto> sortedPosts = posts.stream()
                     .sorted(Comparator.comparing(Post::getCreatedAt).reversed())
                     .map(post -> PostResponseDto.toDto("전체 게시글 조회 완료", 200, post))
@@ -98,7 +122,7 @@ class PostServiceTest extends OttoonApplicationTests {
             Long postId = post.getId();
 
             // when
-            PostResponseDto responseDto = PostService.findById(postId);
+            PostResponseDto responseDto = postService.findById(postId);
 
             // then
             assertEquals(postId, responseDto.getPostId());
@@ -123,7 +147,7 @@ class PostServiceTest extends OttoonApplicationTests {
                     .sample();
 
             // when
-            PostResponseDto responseDto = PostService.update(postId, requestDto);
+            PostResponseDto responseDto = postService.update(postId, requestDto);
 
             // then
             assertEquals(content, requestDto.getContents());
@@ -146,7 +170,7 @@ class PostServiceTest extends OttoonApplicationTests {
                     .sample();
 
             // when
-            PostResponseDto responseDto = PostService.update(postId, requestDto);
+            PostResponseDto responseDto = postService.update(postId, requestDto);
 
             // then
             assertEquals(content, requestDto.getContents());
@@ -170,12 +194,13 @@ class PostServiceTest extends OttoonApplicationTests {
 
             // when
             CustomException exception = assertThrows(CustomException.class,
-                    () -> PostService.update(postId, requestDto));
+                    () -> postService.update(postId, requestDto));
 
             // then
             assertEquals(exception.getErrorCode(), ErrorCode.BAD_AUTH_PUT);
         }
     }
+
     @Nested
     @DisplayName("게시물 삭제")
     @Order(3)
@@ -186,14 +211,15 @@ class PostServiceTest extends OttoonApplicationTests {
             // given
             Long postId = posts.get(0).getId();
             // when
-            PostService.delete(postId);
+            postService.delete(postId);
 
             // then
             CustomException exception = assertThrows(CustomException.class,
-                    () -> PostService.findById(postId));
+                    () -> postService.findById(postId));
 
             assertEquals(exception.getErrorCode(), ErrorCode.BAD_POST_ID);
         }
+
         @DisplayName("게시물 삭제_다른사람")
         @Test
         public void test2() {
@@ -206,9 +232,52 @@ class PostServiceTest extends OttoonApplicationTests {
 
             // when
             CustomException exception = assertThrows(CustomException.class,
-                    () -> PostService.delete(postId));
+                    () -> postService.delete(postId));
             //then
             assertEquals(exception.getErrorCode(), ErrorCode.BAD_AUTH_DELETE);
         }
     }
+
+    @Test
+    @DisplayName("좋아요한 게시물 조회")
+    @Transactional
+    void test() {
+        //given
+        posts.forEach(post -> post.updateUser(user));
+        UserDetails userDetails = (UserDetails) authentication.getPrincipal();
+        likeRepository.save(new Likes(user, posts.get(0), LikeTypeEnum.POST_TYPE));
+        likeRepository.save(new Likes(user, posts.get(1), LikeTypeEnum.POST_TYPE));
+        likeRepository.save(new Likes(user, posts.get(2), LikeTypeEnum.POST_TYPE));
+
+        //when
+        Page<PostResponseDto> result = postService.findLikePost(userDetails, 1);
+
+        //then
+
+        assertTrue(result.getTotalElements() == 3);
+        assertEquals(result.getContent().get(0).getPostId(), posts.get(2).getId());
+        assertEquals(result.getContent().get(1).getPostId(), posts.get(1).getId());
+        assertEquals(result.getContent().get(2).getPostId(), posts.get(0).getId());
+    }
+
+    @Test
+    @DisplayName("팔로우한 유저의 게시물 조회")
+    @Transactional
+    void test2() {
+        //given
+        UserDetails userDetails = (UserDetails) authentication.getPrincipal();
+        followRepository.save(new Follow(true, user.getId(), posts.get(1).getUser()));
+        followRepository.save(new Follow(true, user.getId(), posts.get(2).getUser()));
+
+
+        //when
+        Page<PostResponseDto> result = postService.findPostsFollow(userDetails, 1);
+
+        //then
+
+        assertTrue(result.getTotalElements() == 2);
+        assertEquals(posts.get(1).getId(), result.getContent().get(0).getPostId());
+        assertEquals(posts.get(2).getId(), result.getContent().get(1).getPostId());
+    }
+
 }

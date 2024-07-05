@@ -1,9 +1,11 @@
 package com.sparta.ottoon.post.service;
 
+import com.querydsl.core.Tuple;
 import com.sparta.ottoon.post.dto.PostRequestDto;
 import com.sparta.ottoon.post.dto.PostResponseDto;
 import com.sparta.ottoon.auth.entity.User;
 import com.sparta.ottoon.auth.entity.UserStatus;
+import com.sparta.ottoon.post.repository.PostCustomRepositoryImpl;
 import com.sparta.ottoon.post.repository.PostRepository;
 import com.sparta.ottoon.auth.repository.UserRepository;
 import com.sparta.ottoon.common.exception.CustomException;
@@ -16,10 +18,10 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.Comparator;
 import java.util.List;
 
 @Service
@@ -29,6 +31,8 @@ public class PostService {
 
     private final PostRepository postRepository;
     private final UserRepository userRepository;
+
+    private final PostCustomRepositoryImpl postCustomRepositoryImpl;
 
     @Transactional
     public PostResponseDto save(PostRequestDto postRequestDto) {
@@ -110,4 +114,30 @@ public class PostService {
         return user.getId();
     }
 
+    public Page<PostResponseDto> findLikePost(UserDetails userDetails, int page) {
+        Pageable pageable = PageRequest.of(page - 1, 5);
+
+        User user = userRepository.findByUsername(userDetails.getUsername()).orElseThrow();
+
+        Page<Post> postList = postCustomRepositoryImpl.findAllILike(user.getId(), pageable);
+
+        Page<PostResponseDto> postResponseDtos = postList
+                .map(post -> PostResponseDto.toDto("좋아요 한 게시글 조회 완료", 200, post));
+
+        return postResponseDtos;
+    }
+
+
+    public Page<PostResponseDto> findPostsFollow(UserDetails userDetails, int page) {
+        Pageable pageable = PageRequest.of(page-1, 5);
+
+        User user = userRepository.findByUsername(userDetails.getUsername()).orElseThrow();
+
+        Page<Post> postList = postCustomRepositoryImpl.findPostsFollow(user.getId(), pageable);
+
+        Page<PostResponseDto> postResponseDtos =
+                postList
+                        .map(post -> PostResponseDto.toDto("팔로우한 유저의 게시글 조회 완료", 200, post));
+        return postResponseDtos;
+    }
 }

@@ -1,5 +1,6 @@
 package com.sparta.ottoon;
 
+import com.fasterxml.jackson.annotation.JsonAnyGetter;
 import com.sparta.ottoon.auth.entity.User;
 import com.sparta.ottoon.auth.repository.UserRepository;
 import com.sparta.ottoon.fixtureMonkey.FixtureMonkeyUtil;
@@ -14,7 +15,7 @@ public class OttoonApplicationTests {
 
     @Autowired
     private UserRepository userRepository;
-    private List<User> users;
+    protected List<User> users;
     protected List<User> userDataInit() {
         List<User> users = FixtureMonkeyUtil.Entity.toUsers(5);
         this.users = userRepository.saveAll(users);
@@ -27,6 +28,7 @@ public class OttoonApplicationTests {
 
     protected List<Post> getPostDataInit(int count) {
         userDataInit();
-        return FixtureMonkeyUtil.Entity.toPosts(count, this.users);
+        List<Post> posts = FixtureMonkeyUtil.Entity.toPosts(count, this.users);
+        return posts;
     }
 }

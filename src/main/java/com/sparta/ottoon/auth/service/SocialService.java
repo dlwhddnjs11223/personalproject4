@@ -33,7 +33,7 @@ public class SocialService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
 
-    @Value("${KAKAO_CLIENT_ID}")
+    @Value("${kakao.client.id}")
     private String client_id;
 
     public String kakaoLogin(String code) throws JsonProcessingException {

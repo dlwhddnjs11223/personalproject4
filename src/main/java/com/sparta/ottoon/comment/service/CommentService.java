@@ -6,6 +6,7 @@ import com.sparta.ottoon.auth.repository.UserRepository;
 import com.sparta.ottoon.comment.dto.CommentRequestDto;
 import com.sparta.ottoon.comment.dto.CommentResponseDto;
 import com.sparta.ottoon.comment.entity.Comment;
+import com.sparta.ottoon.comment.repository.CommentCustomRepositoryImpl;
 import com.sparta.ottoon.comment.repository.CommentRepository;
 import com.sparta.ottoon.common.exception.CustomException;
 import com.sparta.ottoon.common.exception.ErrorCode;
@@ -13,6 +14,10 @@ import com.sparta.ottoon.post.entity.Post;
 import com.sparta.ottoon.post.repository.PostRepository;
 import com.sparta.ottoon.profile.service.ProfileService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -25,6 +30,7 @@ public class CommentService {
     private final UserRepository userRepository;
     private final PostRepository postRepository;
     private final ProfileService profileService;
+    private final CommentCustomRepositoryImpl commentCustomRepositoryimpl;
 
     public CommentResponseDto createComment(Long postId, CommentRequestDto commentRequestDto, String username) {
         // user 찾기
@@ -80,5 +86,12 @@ public class CommentService {
         profileService.validateUserPermissions(comment.getUser(),username);
         // comment 삭제
         commentRepository.delete(comment);
+    }
+
+    public Page<CommentResponseDto> findCommentLike(String username, int page) {
+        Pageable pageable = PageRequest.of(page-1, 5);
+        User user = userRepository.findByUsername(username).orElseThrow();
+        Page<Comment> commentList = commentCustomRepositoryimpl.findCommentILike(user.getId(), pageable);
+        return commentList.map(CommentResponseDto::new);
     }
 }

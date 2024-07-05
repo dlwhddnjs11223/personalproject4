@@ -1,28 +1,30 @@
 package com.sparta.ottoon.auth.entity;
 
+import com.sparta.ottoon.comment.entity.Comment;
 import com.sparta.ottoon.common.Timestamped;
+import com.sparta.ottoon.like.entity.Likes;
+import com.sparta.ottoon.post.entity.Post;
 import com.sparta.ottoon.profile.dto.ProfileRequestDto;
 import jakarta.persistence.*;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 
 @Entity
-@Table(name="users")
+@Table(name = "users")
 @Getter
 @NoArgsConstructor
+@AllArgsConstructor
 public class User extends Timestamped implements UserDetails {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-    @Column(nullable=false, length = 50)
+    @Column(nullable = false, length = 50)
     private String username;
     @Column(nullable = false)
     private String password;
@@ -38,8 +40,21 @@ public class User extends Timestamped implements UserDetails {
     @Column
     private String refreshToken;
     private Long kakaoId;
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Likes> likesList = new ArrayList<>();
+
+
 
     public User(String username, String nickname, String password, String email, UserStatus status) {
+        this.username = username;
+        this.nickname = nickname;
+        this.password = password;
+        this.email = email;
+        this.status = status;
+    }
+
+    public User(Long id, String username, String nickname, String password, String email, UserStatus status) {
+        this.id = id;
         this.username = username;
         this.nickname = nickname;
         this.password = password;
@@ -74,7 +89,7 @@ public class User extends Timestamped implements UserDetails {
         this.refreshToken = refresh;
     }
 
-    public void updateUserInfo(ProfileRequestDto requestDto){
+    public void updateUserInfo(ProfileRequestDto requestDto) {
         this.nickname = requestDto.getNickname();
         this.intro = requestDto.getIntro();
     }
@@ -92,8 +107,8 @@ public class User extends Timestamped implements UserDetails {
         return this;
     }
 
-    public void updateStatus(UserStatus userStatus){
-        this.status =  userStatus;
-            }
+    public void updateStatus(UserStatus userStatus) {
+        this.status = userStatus;
+    }
 
 }

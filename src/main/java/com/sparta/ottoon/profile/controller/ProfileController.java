@@ -22,10 +22,16 @@ public class ProfileController {
     private final ProfileService userService;
 
     @Operation(summary = "getUser", description = "프로필 조회 기능입니다.")
-    @GetMapping("/{userName}")
-    public ResponseEntity<ProfileResponseDto> getUser(@PathVariable String userName){
-        return ResponseEntity.ok().body(userService.getUser(userName));
+    @GetMapping("/{username}")
+    public ResponseEntity<ProfileResponseDto> getUser(@PathVariable String username){
+        return ResponseEntity.ok().body(userService.getUser(username));
     }
+
+//    @Operation(summary = "getToptenUser", description = "프로필 조회 기능입니다.")
+//    @GetMapping("/topten")
+//    public ResponseEntity<ProfileResponseDto> getToptenUser(){
+//        return ResponseEntity.ok().body(userService.getToptenUser());
+//    }
 
     @Operation(summary = "updateUser", description = "프로필 수정 기능입니다.")
     @PostMapping("/{userName}")

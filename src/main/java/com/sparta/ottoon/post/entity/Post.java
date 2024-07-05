@@ -2,11 +2,13 @@ package com.sparta.ottoon.post.entity;
 
 import com.sparta.ottoon.auth.entity.User;
 import com.sparta.ottoon.common.Timestamped;
+import com.sparta.ottoon.like.entity.Likes;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import lombok.Setter;
-import org.springframework.http.ResponseEntity;
+
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Getter
@@ -31,8 +33,16 @@ public class Post extends Timestamped {
     @Column(nullable = false)
     private boolean isTop;
 
+    @OneToMany(mappedBy="post", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Likes> likesList = new ArrayList<>();
+
     public Post(String contents) {
         this.contents = contents;
+        this.postStatus = PostStatus.GENERAL;
+    }
+    public Post(String contents, User user) {
+        this.contents = contents;
+        this.user = user;
         this.postStatus = PostStatus.GENERAL;
     }
 

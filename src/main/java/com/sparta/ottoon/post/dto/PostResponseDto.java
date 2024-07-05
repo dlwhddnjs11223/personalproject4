@@ -24,9 +24,10 @@ public class PostResponseDto {
     private LocalDateTime createdAt;
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime modifiedAt;
+    private int likeCount;
 
     public PostResponseDto(Post post) {
-        new PostResponseDto("", 0, post.getId(), post.getContents(), post.getCreatedAt(), post.getModifiedAt());
+        new PostResponseDto("", 0, post.getId(), post.getContents(), post.getCreatedAt(), post.getModifiedAt(), post.getLikesList().size());
     }
 
     //게시글 등록, 수정, 조회
@@ -38,6 +39,7 @@ public class PostResponseDto {
                 .contents(post.getContents())
                 .createdAt(post.getCreatedAt())
                 .modifiedAt(post.getModifiedAt())
+                .likeCount(post.getLikesList().size())
                 .build();
     }
 
